@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 
-import { useState } from "react"
-import { Play, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Play, X, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import Footer from "@/components/ui/footer"
@@ -11,6 +11,27 @@ import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react"
 import QuickBookPage from "../consultations/quick-book/page"
 
 export default function Page() {
+    const [consultants, setConsultants] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState("")
+    const [selectedConsultant, setSelectedConsultant] = useState(null)
+    useEffect(() => {
+        const fetchConsultants = async () => {
+            try {
+                const response = await fetch("http://localhost:3003/api/consultants")
+                if (!response.ok) {
+                    throw new Error("Failed to fetch consultants.")
+                }
+                const data = await response.json()
+                setConsultants(data.data) // Accessing `data` from API response
+            } catch (err) {
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchConsultants()
+    }, [])
     const [isOpen, setIsOpen] = useState(false)
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#020B2D] via-[#0A1A5D] to-[#F5E6D3]">
@@ -152,25 +173,87 @@ export default function Page() {
                 </section>
 
                 {/* Experts */}
+                {/* Experts Section */}
                 <section className="mb-20">
-                    <h3 className="mb-2 text-2xl font-semibold">Meet Our Experts</h3>
-                    <p className="mb-8 text-white/80">Choose your favorite expert</p>
-                    <div className="grid grid-cols-4 gap-6">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                            <Card key={index} className="overflow-hidden bg-white p-4">
-                                <div className="mb-4 aspect-square w-full overflow-hidden rounded-lg bg-[#FFE4D6]" />
-                                <h4 className="font-medium text-gray-900">Expert Name</h4>
-                                <p className="text-sm text-gray-600">Vedic Expert</p>
-                                <Button variant="link" className="mt-2 p-0 text-[#FFB800]">
-                                    Live Now
-                                </Button>
-                            </Card>
-                        ))}
-                    </div>
-                    <Button variant="outline" className="mt-6 border-[#FFB800] text-[#FFB800] hover:bg-[#FFB800]/10">
+                    <h3 className="mb-2 text-2xl font-semibold text-center text-white">Meet Our Experts</h3>
+                    <p className="mb-8 text-center text-white/80">Choose your favorite expert</p>
+
+                    {loading ? (
+                        <p className="text-center text-white">Loading experts...</p>
+                    ) : error ? (
+                        <p className="text-center text-red-500">Error: {error}</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {consultants.map((consultant) => (
+                                <Card key={consultant.id} className="bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between">
+                                    {/* Profile Placeholder */}
+                                    <div className="flex items-center justify-center h-24 w-24 mx-auto mb-4 rounded-full bg-[#FFE4D6]">
+                                        <span className="text-3xl font-bold text-gray-700">{consultant.name.charAt(0)}</span>
+                                    </div>
+
+                                    {/* Expert Details */}
+                                    <div className="text-center">
+                                        <h4 className="font-semibold text-lg text-gray-900">{consultant.name}</h4>
+                                        <p className="text-sm text-gray-600 mt-1">{consultant.bio.slice(0, 80)}...</p>
+                                    </div>
+
+                                    {/* Rating & Reviews */}
+                                    <div className="flex items-center justify-center gap-2 mt-4">
+                                        <Star className="h-4 w-4 text-yellow-500" />
+                                        <span className="text-gray-900">{consultant.averageRating?.toFixed(1) || "N/A"}</span>
+                                        <span className="text-sm text-gray-600">({consultant.reviewCount} reviews)</span>
+                                    </div>
+
+                                    {/* View Profile Button */}
+                                    <Button
+                                        variant="link"
+                                        className="mt-4 text-[#FFB800] text-center w-full"
+                                        onClick={() => setSelectedConsultant(consultant)}
+                                    >
+                                        View Profile
+                                    </Button>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Consultant Profile Popup */}
+                    {selectedConsultant && (
+                        <Dialog open={!!selectedConsultant} onClose={() => setSelectedConsultant(null)} className="fixed inset-0 flex items-center justify-center p-4 bg-black/50">
+                            <DialogPanel className="relative w-full max-w-xl bg-white p-6 rounded-lg shadow-lg">
+                                <DialogTitle className="text-xl font-semibold text-gray-900 mb-4">{selectedConsultant.name}</DialogTitle>
+
+                                {/* Close Button */}
+                                <button
+                                    className="absolute top-4 right-4 text-gray-500 hover:text-black"
+                                    onClick={() => setSelectedConsultant(null)}
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+
+                                {/* Profile Content */}
+                                <div className="flex gap-6">
+                                    {/* Profile Image */}
+                                    <div className="w-32 h-32 rounded-lg bg-gray-200 flex items-center justify-center">
+                                        <span className="text-4xl font-bold text-gray-700">{selectedConsultant.name.charAt(0)}</span>
+                                    </div>
+
+                                    {/* Profile Details */}
+                                    <div className="flex-1">
+                                        <p className="text-sm text-gray-600">{selectedConsultant.bio}</p>
+                                        <p className="mt-3"><strong>Expertise:</strong> {selectedConsultant.expertise.join(", ")}</p>
+                                        <p className="mt-1"><strong>Languages:</strong> {selectedConsultant.languages.join(", ")}</p>
+                                        <p className="mt-1"><strong>Experience:</strong> {selectedConsultant.experience} years</p>
+                                    </div>
+                                </div>
+                            </DialogPanel>
+                        </Dialog>
+                    )}
+                    <Button variant="outline" className="mt-6 mx-auto block border-[#FFB800] text-[#FFB800] hover:bg-[#FFB800]/10">
                         Book Consultation
                     </Button>
                 </section>
+
 
                 {/* Testimonials */}
                 <section className="mb-20">
