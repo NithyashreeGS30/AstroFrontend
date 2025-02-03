@@ -15,6 +15,15 @@ export default function Page() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [selectedConsultant, setSelectedConsultant] = useState(null)
+    const [showAll, setShowAll] = useState(false)
+    const [expandedBios, setExpandedBios] = useState<{ [key: string]: boolean }>({});
+
+    const toggleBio = (id) => {
+        setExpandedBios((prev) => ({
+            ...prev,
+            [id]: !prev[id], // Toggle the state for this consultant
+        }))
+    }
     useEffect(() => {
         const fetchConsultants = async () => {
             try {
@@ -32,7 +41,10 @@ export default function Page() {
         }
         fetchConsultants()
     }, [])
+    const displayedConsultants = showAll ? consultants : consultants.slice(0, 3)
     const [isOpen, setIsOpen] = useState(false)
+
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#020B2D] via-[#0A1A5D] to-[#F5E6D3]">
             {/* Navigation */}
@@ -79,49 +91,86 @@ export default function Page() {
 
                 {/* Consultations */}
                 <section className="mb-20">
-                    <h3 className="mb-8 text-2xl font-semibold">Our top consultations</h3>
-                    <div className="grid grid-cols-4 gap-6">
-                        {[
-                            { icon: "🕉️", title: "30 min Jyotish Counselling", time: "30min", price: "1500" },
-                            { icon: "🌟", title: "General Muhurtha", time: "15min", price: "1500" },
-                            { icon: "❤️", title: "Compatibility", time: "15min", price: "1500" },
-                            { icon: "🏠", title: "Vastu Guidance", time: "30min", price: "2500" },
-                        ].map((consultation, index) => (
-                            <Card key={index} className="overflow-hidden bg-white p-4">
-                                <div className="mb-4 h-12 w-12 rounded-full bg-[#FFE4D6] p-3 text-2xl">{consultation.icon}</div>
-                                <h4 className="mb-2 font-medium text-gray-900">{consultation.title}</h4>
-                                <div className="mb-1 text-sm text-gray-600">Time: {consultation.time}</div>
-                                <div className="mb-4 text-sm text-gray-600">Price: ₹{consultation.price}</div>
+                    <h3 className="mb-8 text-2xl font-semibold text-white">Our Top Consultant</h3>
 
-                                <Button
-                                    className="w-full bg-[#FFB800] text-black hover:bg-[#FFB800]/90"
-                                    onClick={() => setIsOpen(true)}
-                                >
-                                    Book Now
-                                </Button>
-                                <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="fixed inset-0 flex items-center justify-center p-4 bg-black/50">
-                                    <DialogPanel className="relative w-full max-w-lg bg-white p-6 rounded-lg shadow-lg">
-                                        <DialogTitle className="text-xl font-semibold text-gray-900 mb-4">Quick Booking</DialogTitle>
+                    {loading ? (
+                        <p className="text-center text-white">Loading...</p>
+                    ) : error ? (
+                        <p className="text-center text-red-500">Error: {error}</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            {displayedConsultants.map((consultant) => (
+                                <Card key={consultant.id} className="bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between">
+                                    {/* Profile Placeholder */}
+                                    <div className="flex items-center justify-center h-24 w-24 mx-auto mb-4 rounded-full bg-[#FFE4D6]">
+                                        <span className="text-3xl font-bold text-gray-700">{consultant.name.charAt(0)}</span>
+                                    </div>
 
-                                        {/* Close Button */}
-                                        <button
-                                            className="absolute top-4 right-4 text-gray-500 hover:text-black"
-                                            onClick={() => setIsOpen(false)}
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
+                                    {/* Consultant Details */}
+                                    <div className="text-center">
+                                        <h4 className="font-semibold text-lg text-gray-900">{consultant.name}</h4>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {expandedBios[consultant.id] || consultant.bio.length <= 80
+                                                ? consultant.bio
+                                                : `${consultant.bio.slice(0, 80)}...`
+                                            }                                            {!expandedBios[consultant.id] && consultant.bio.length > 80 && (
+                                                <button
+                                                    className="text-[#FFB800] ml-1 underline"
+                                                    onClick={() => toggleBio(consultant.id)}
+                                                >
+                                                    Read More
+                                                </button>
+                                            )}
+                                        </p>
+                                        <p className="mt-1"><strong>Expertise:</strong> {consultant.expertise.join(", ")}</p>
+                                        <p className="mt-1"><strong>Languages:</strong> {consultant.languages.join(", ")}</p>
+                                    </div>
 
-                                        {/* Quick Booking Component */}
-                                        <QuickBookPage />
+                                    {/* Rating & Reviews */}
+                                    <div className="flex items-center justify-center gap-2 mt-4">
+                                        <Star className="h-4 w-4 text-yellow-500" />
+                                        <span className="text-gray-900">{consultant.averageRating?.toFixed(1) || "N/A"}</span>
+                                        <span className="text-sm text-gray-600">({consultant.reviewCount} reviews)</span>
+                                    </div>
 
-                                    </DialogPanel>
-                                </Dialog>
-                            </Card>
-                        ))}
-                    </div>
-                    <Link href="/consultations" className="mt-4 inline-block text-[#FFB800] hover:text-[#FFB800]/80">
-                        View All →
-                    </Link>
+                                    {/* Book Now Button */}
+                                    <Button
+                                        className="w-full bg-[#FFB800] text-black hover:bg-[#FFB800]/90"
+                                        onClick={() => setIsOpen(true)}
+                                    >
+                                        Book Now
+                                    </Button>
+                                    <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="fixed inset-0 flex items-center justify-center p-4 bg-black/50">
+                                        <DialogPanel className="relative w-full max-w-lg bg-white p-6 rounded-lg shadow-lg">
+                                            <DialogTitle className="text-xl font-semibold text-gray-900 mb-4">Quick Booking</DialogTitle>
+
+                                            {/* Close Button */}
+                                            <button
+                                                className="absolute top-4 right-4 text-gray-500 hover:text-black"
+                                                onClick={() => setIsOpen(false)}
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+
+                                            {/* Quick Booking Component */}
+                                            <QuickBookPage />
+
+                                        </DialogPanel>
+                                    </Dialog>
+
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* View All Button */}
+                    <Button
+                        variant="link"
+                        className="mt-4 text-[#FFB800] text-center w-full"
+                        onClick={() => setShowAll(!showAll)}
+                    >
+                        {showAll ? "Show Less" : "View All →"}
+                    </Button>
                 </section>
 
                 {/* Classes */}
