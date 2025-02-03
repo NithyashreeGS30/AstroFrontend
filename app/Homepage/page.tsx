@@ -17,7 +17,8 @@ export default function Page() {
     const [selectedConsultant, setSelectedConsultant] = useState(null)
     const [showAll, setShowAll] = useState(false)
     const [expandedBios, setExpandedBios] = useState<{ [key: string]: boolean }>({});
-
+    const [selectedConsultantId, setSelectedConsultantId] = useState(null);
+    const [selectedConsultantData, setSelectedConsultantData] = useState(null);
     const toggleBio = (id) => {
         setExpandedBios((prev) => ({
             ...prev,
@@ -41,6 +42,24 @@ export default function Page() {
         }
         fetchConsultants()
     }, [])
+
+
+    const handleBookNow = async (consultantId) => {
+        setIsOpen(true); // Open the modal
+
+        try {
+            const response = await fetch(`http://localhost:3003/api/consultants/${consultantId}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch consultant details.");
+            }
+            const data = await response.json();
+            setSelectedConsultantData(data.data); // Store consultant details
+        } catch (err) {
+            console.error("Error fetching consultant details:", err);
+        }
+    };
+
+
     const displayedConsultants = showAll ? consultants : consultants.slice(0, 3)
     const [isOpen, setIsOpen] = useState(false)
 
@@ -136,7 +155,7 @@ export default function Page() {
                                     {/* Book Now Button */}
                                     <Button
                                         className="w-full bg-[#FFB800] text-black hover:bg-[#FFB800]/90"
-                                        onClick={() => setIsOpen(true)}
+                                        onClick={() => handleBookNow(consultant.id)}
                                     >
                                         Book Now
                                     </Button>
@@ -153,7 +172,7 @@ export default function Page() {
                                             </button>
 
                                             {/* Quick Booking Component */}
-                                            <QuickBookPage />
+                                            <QuickBookPage consultant={selectedConsultantData} />
 
                                         </DialogPanel>
                                     </Dialog>
